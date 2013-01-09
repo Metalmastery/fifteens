@@ -70,7 +70,10 @@ function Fifteens(){
 		while(checkFieldSolve() % 2){
 			chips.sort(function(a,b){return 0.5 - Math.random()});
 		}
-		cns(checkFieldSolve());
+		/*var tmp = chips[6];
+		chips[6] = chips[15];
+		chips[15] = tmp;
+		cns(checkFieldSolve());*/
 		chips.forEach(function(chip,i){
 			if (chip) chip.updatePosition(i, fieldOffsetX, fieldOffsetY)
 		});
@@ -180,7 +183,7 @@ function Fifteens(){
 		this.needRedrawTurns = true;
 	};
 	InfoBar.prototype.goal = function(){
-		if (this.score < this.turns)
+		if (this.score == 0 || this.score > this.turns)
 			this.score = this.turns;
 		this.needRedrawScore = true;
 		this.resetTurns();
@@ -295,10 +298,13 @@ function Fifteens(){
 	var initChips = function(){
 		/* TODO randomize chips at start*/
 		/* TODO check the set of chips for solve possibility*/
-		for (var i = 0; i<15; i++){
+		for (var i = 0; i<12; i++){
 			chips[i] = new Chip(i);
 		}
-		chips[i] = null;
+		chips[i+1] = new Chip(i+1);
+		chips[i+2] = new Chip(i+2);
+		chips[i] = new Chip(i);
+		chips[i+3] = null;
 		randomizeChips();
 	};
 
