@@ -43,22 +43,48 @@ function Fifteens(){
 			window.setTimeout(callback, 1000 / 60);
 		};
 
+	var checkFieldSolve = function() {
+		var n =
+			chips
+				.map(function(chip, i){
+						var _thisPosition = i || 0;
+						var test = 0;
+						if (chip) {
+							for (var j=0; j<_thisPosition; j++){
+								if (chips[j] && chips[j].number > chip.number) {
+									test++;
+								}
+							}
+						}
+						return test;
+					})
+				.reduce(function(sum, curr){
+						return sum+curr;
+					}, 0);
+		var k = 1 + (chips.indexOf(null) / 4 >> 0);
+		return n == 0 ? -1 : n + k;
+	};
+
 	var randomizeChips = function(){
 		chips.sort(function(a,b){return 0.5 - Math.random()});
-		for (var chp in chips){
-			if (chips[chp]) chips[chp].updatePosition(chp, fieldOffsetX, fieldOffsetY);
+		while(checkFieldSolve() % 2){
+			chips.sort(function(a,b){return 0.5 - Math.random()});
 		}
+		cns(checkFieldSolve());
+		chips.forEach(function(chip,i){
+			if (chip) chip.updatePosition(i, fieldOffsetX, fieldOffsetY)
+		});
 	};
 
 	var restartGame = function(){
 		ctx.clearRect(fieldOffsetX, fieldOffsetY, 400, 400);
 		info.resetTurns();
 		randomizeChips();
-		for (var i in chips){
-			if (chips[i]) {
-				chips[i].show(ctx);
+		chips.forEach(function(chp){
+			if (chp) {
+				chp.show(ctx);
 			}
-		}
+		})
 	};
 
 	var RestartButton = function(){
@@ -71,12 +97,12 @@ function Fifteens(){
 		this.width = 92;
 		this.needRedraw = true;
 		this.hover = false;
-		this.color = '#cccbcb';
-		this.hoverColor = '#eeeeee';
+		this.color = '#027981';
+		this.hoverColor = '#ffb7a9';
 	};
 	RestartButton.prototype.draw = function(context){
 		context.save();
-		this.hover ? context.fillStyle = this.hoverColor : context.fillStyle = '#ffffff';
+		this.hover ? context.fillStyle = this.hoverColor : context.fillStyle = '#f2f2f2';
 		context.strokeStyle = this.color;
 		var radius = 10;
 		var marg = 1;
@@ -131,6 +157,7 @@ function Fifteens(){
 			restartGame();
 		}
 		return false;
+
 	};
 
 	var InfoBar = function(){
@@ -146,7 +173,7 @@ function Fifteens(){
 		this.y = 0;
 		this.width = 292;
 		this.height = 30;
-		this.color = '#cccbcb';
+		this.color = '#027981';
 	};
 	InfoBar.prototype.turn = function(){
 		this.turns++;
@@ -154,8 +181,10 @@ function Fifteens(){
 	};
 	InfoBar.prototype.goal = function(){
 		if (this.score < this.turns)
-			this.score == this.turns;
+			this.score = this.turns;
 		this.needRedrawScore = true;
+		this.resetTurns();
+		restartGame();
 	};
 	InfoBar.prototype.redrawTurns = function(ctx){
 		ctx.save();
@@ -211,11 +240,11 @@ function Fifteens(){
 	};
 
 	var initField = function(){
-		for (var i in chips){
-			if (chips[i]) {
-				chips[i].show(ctx);
+		chips.forEach(function(chip){
+			if (chip) {
+				chip.show(ctx);
 			}
-		}
+		});
 		info = new InfoBar();
 		info.drawBox(ctx);
 		restartButton = new RestartButton();
@@ -226,11 +255,11 @@ function Fifteens(){
 		oldtime = time;
 		if (fps > maxTimeBetweenFrames) maxTimeBetweenFrames = fps;
 		inputs.fps.value = (1000 / fps) >> 0;
-		for (var i in chips) {
-			if (chips[i]) {
-				chips[i].animate(ctx)
+		chips.forEach(function(chip){
+			if (chip) {
+				chip.animate(ctx);
 			}
-		}
+		})
 		if (info.needRedrawScore) info.redrawScore(ctx);
 		if (info.needRedrawTurns) info.redrawTurns(ctx);
 		if (restartButton.needRedraw) restartButton.draw(ctx);
@@ -241,9 +270,9 @@ function Fifteens(){
 		var box = canva.getBoundingClientRect();
 		var x = (e.clientX - box.left) >> 0;
 		var y = (e.clientY - box.top) >> 0;
-		for (var i in chips) {
-			if (chips[i] && chips[i].mouseClick(x,y)) break;
-		}
+		chips.forEach(function(chip){
+			if (chip) chip.mouseClick(x,y);
+		})
 		restartButton.mouseClick(x, y, ctx);
 	};
 
@@ -257,11 +286,9 @@ function Fifteens(){
 
 		inputs.x.value = x;
 		inputs.y.value = y;
-		for (var i in chips){
-			if (chips[i] && chips[i].mouseOver(x,y)){
-				hoverChip = chips[i];
-			}
-		}
+		chips.forEach(function(chip){
+			if (chip) chip.mouseOver(x,y);
+		})
 		restartButton.mouseOver(x, y, ctx);
 	};
 
@@ -325,7 +352,6 @@ function Fifteens(){
 		{
 			//var trans = 2;
 			var trans = this.easing(10);
-			//cns(trans);
 			this.hide(context);
 			(this.targetX != null && this.x != this.targetX) ? this.x += ((this.x > this.targetX) ? (-trans) : trans) : this.targetX = null;
 			(this.targetY != null && this.y != this.targetY) ? this.y += ((this.y > this.targetY) ? (-trans) : trans) : this.targetY = null;
@@ -408,15 +434,20 @@ function Fifteens(){
 				var _this = chips.indexOf(this);
 				var empty = chips.indexOf(null);
 				if (Math.abs(chips[_this].x - empty%4*this.width + fieldOffsetX) + Math.abs(chips[_this].y - (empty/4>>0)*this.width - fieldOffsetY) < 200){
-					this.targetX = empty % 4 * this.width + fieldOffsetX;
-					this.targetY = ((empty / 4) >> 0) * this.width + fieldOffsetY;
-					this.needRedraw = true;
-					this.animation = true;
-					var tmp = chips[_this];
-					chips[_this] = chips[empty];
-					chips[empty] = tmp;
-					info.turn();
-					return true;
+					if (chips[_this].number >= _this && checkFieldSolve() < 0) {
+						info.goal();
+					} else {
+						this.targetX = empty % 4 * this.width + fieldOffsetX;
+						this.targetY = ((empty / 4) >> 0) * this.width + fieldOffsetY;
+						this.needRedraw = true;
+						this.animation = true;
+						info.turn();
+
+						var tmp = chips[_this];
+						chips[_this] = chips[empty];
+						chips[empty] = tmp;
+						return true;
+					}
 				}
 			}
 		}
@@ -434,15 +465,15 @@ function Fifteens(){
 	Chip.prototype.updatePosition = function(position, offsetX, offsetY){
 		offsetX = offsetX || 0;
 		offsetY = offsetY || 0;
-		position = position || this.number;
+		position = position || 0;
 		this.x = position % 4 * this.width + offsetX;
 		this.y = (position / 4 >> 0) * this.height + offsetY;
 		this.position = position;
 	};
 	Chip.prototype.width = 100;
 	Chip.prototype.height = 100;
-	Chip.prototype.color = '#66cc88';
-	Chip.prototype.hoverColor = '#ffaaaa';
+	Chip.prototype.color = '#66d8d9';
+	Chip.prototype.hoverColor = '#f28f29';
 
 	this.init = function(){
 		if (!initCanvas()) return;

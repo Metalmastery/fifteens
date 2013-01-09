@@ -1,11 +1,11 @@
 #canva{
     margin: 0 auto;
-	position: relative;
-	top: 50px;
+	top: 10%;
 	left: 10%;
+    position: absolute;
 }
 
 #canvasHolder {
-	margin: 0 auto;
-	position: absolute;
+    position: relative;
+    height: 430px;
 }
